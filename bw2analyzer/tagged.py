@@ -4,12 +4,12 @@ from collections import defaultdict
 
 
 def traverse_tagged_databases(
-    functional_unit, method, label="tag", default_tag="other", secondary_tags=[]
+    functional_unit, method, label="tag", default_tag="other", secondary_tags=[], fg_databases=None
 ):
 
-    """Traverse a functional unit throughout its foreground database(s), and
-
-    group impacts by tag label.
+    """Traverse a functional unit throughout its foreground database(s) or the 
+    
+    listed databses in fg_databses, and group impacts by tag label.
 
 
     Contribution analysis work by linking impacts to individual activities.
@@ -90,6 +90,9 @@ def traverse_tagged_databases(
         * ``default_tag``: The tag classifier to use if none was given. Default is ``"other"``
 
         * ``secondary_tags``: List of tuples in the format (secondary_label, secondary_default_tag). Default is empty list.
+        
+        * ``fg_databases``: a list of foreground databases to be traversed, e.g. ['foreground', 'biomass', 'machinery']
+                            It's not recommended to include all databases of a project in the list to be traversed, especially not ecoinvent itself
 
 
     Returns:
@@ -110,7 +113,7 @@ def traverse_tagged_databases(
 
     graph = [
         recurse_tagged_database(
-            key, amount, method_dict, lca, label, default_tag, secondary_tags
+            key, amount, method_dict, lca, label, default_tag, secondary_tags, fg_databases
         )
         for key, amount in functional_unit.items()
     ]
@@ -144,7 +147,7 @@ def aggregate_tagged_graph(graph):
 
 
 def recurse_tagged_database(
-    activity, amount, method_dict, lca, label, default_tag, secondary_tags=[]
+    activity, amount, method_dict, lca, label, default_tag, secondary_tags=[], fg_databases=None
 ):
 
     """Traverse a foreground database and assess activities and biosphere flows by tags.
@@ -166,6 +169,9 @@ def recurse_tagged_database(
         * ``default_tag``: string
 
         * ``secondary_tags``: List of tuples in the format (secondary_label, secondary_default_tag). Default is empty list.
+        
+        * ``fg_databases``: a list of foreground databases to be traversed, e.g. ['foreground', 'biomass', 'machinery']
+                            It's not recommended to include all databases of a project in the list to be traversed, especially not ecoinvent itself
 
 
     Returns:
@@ -209,6 +215,16 @@ def recurse_tagged_database(
 
         activity = get_activity(activity)
 
+    if fg_databases == None: # then set the list equal to the database of the functional unit 
+    
+        fg_databases = [activity['database']] # list, single item
+    
+    elif fg_databases == list(bw2.Database(activity['database']).find_graph_dependents()): 
+        # check that the list fg_databases does not include all the databases involved in the FU 
+        # (otherwise, it would mean we are likely to have to recurse through ecoinvent... not funny)
+        # ideally, should only on first call of recurse_tagged_database
+        raise Exception('The list of databases to traverse fg_databases should not be equal to the all databases involved in the project. You risk to attempt to traverse a background database like ecoinvent - it would take too much time')
+
     inputs = list(activity.technosphere())
 
     production = list(activity.production())
@@ -220,12 +236,12 @@ def recurse_tagged_database(
     else:
         raise ValueError("Can't scale by production exchange")
 
-    inside = [exc for exc in inputs if exc["input"][0] == activity["database"]]
+    inside = [exc for exc in inputs if exc["input"][0] in fg_databases]
 
     outside = {
         exc["input"]: exc["amount"] / scale * amount
         for exc in inputs
-        if exc["input"][0] != activity["database"]
+        if exc["input"][0] not in fg_databases
     }
 
     if outside:
@@ -267,6 +283,7 @@ def recurse_tagged_database(
                 label,
                 default_tag,
                 secondary_tags,
+                fg_databases
             )
             for exc in inside
         ],

@@ -51,12 +51,92 @@ class ContributionTestCase(unittest.TestCase):
             )
         )
 
+    def test_sort_array_percentage_negative_sum(self):
+        test_data = np.array((1.0, -2.0, 4.0, 3.0))
+        answer = np.array(
+            (
+                (4, 2),
+                (3, 3),
+                (-2, 1),
+            )
+        )
+        ca = CA()
+        self.assertTrue(
+            np.allclose(
+                answer, ca.sort_array(test_data, limit=0.3, limit_type="percent", total=test_data.sum())
+            )
+        )
+
+    def test_sort_array_percentage_true_negative_sum(self):
+        test_data = np.array((-1.0, 2.0, -4.0, -3.0))
+        answer = np.array(
+            (
+                (-4, 2),
+                (-3, 3),
+                (2, 1),
+            )
+        )
+        ca = CA()
+        self.assertTrue(
+            np.allclose(
+                answer, ca.sort_array(test_data, limit=0.3, limit_type="percent", total=test_data.sum())
+            )
+        )
+
+    def test_sort_array_cum_percentage(self):
+        test_data = np.array((1.0, 2.0, 4.0, 3.0))
+        answer = np.array(
+            (
+                (4, 2),
+                (3, 3),
+                (2, 1),
+            )
+        )
+        ca = CA()
+        self.assertTrue(
+            np.allclose(
+                answer, ca.sort_array(test_data, limit=0.8, limit_type="cum_percent")
+            )
+        )
+
+    def test_sort_array_cum_percentage_negative(self):
+        test_data = np.array((1.0, 2.0, -4.0, 3.0))
+        answer = np.array(
+            (
+                (-4, 2),
+                (3, 3),
+                (2, 1)
+            )
+        )
+        ca = CA()
+        self.assertTrue(
+            np.allclose(
+                answer, ca.sort_array(test_data, limit=0.8, limit_type="cum_percent")
+            )
+        )
+
+    def test_sort_array_cum_percentage_negative_sum(self):
+        test_data = np.array((1.0, -2.0, 4.0, 3.0))
+        answer = np.array(
+            (
+                (4, 2),
+                (3, 3),
+                (-2, 1)
+            )
+        )
+        ca = CA()
+        self.assertTrue(
+            np.allclose(
+                answer, ca.sort_array(test_data, limit=0.8, limit_type="cum_percent", total=test_data.sum())
+            )
+        )
+
     def test_sort_array_errors(self):
         ca = CA()
         with self.assertRaises(ValueError):
             ca.sort_array([], limit_type="foo", total=1.0)
         with self.assertRaises(ValueError):
-            ca.sort_array([], limit=0.0, limit_type="percent", total=1.0)
+            ca.sort_array([], limit=-0.01, limit_type="percent", total=1.0)
         with self.assertRaises(ValueError):
             ca.sort_array([], limit=1.01, limit_type="percent", total=1.0)
 

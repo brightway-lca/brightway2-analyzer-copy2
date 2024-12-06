@@ -4,11 +4,11 @@ from bw2data import get_activity
 
 
 class ContributionAnalysis:
-    def sort_array(self, data: np.array, limit: float = 25, limit_type: str = "number", total: Optional[float] = None):
+    def sort_array(self, data: np.array, limit: float = 25, limit_type: str = "number", total: Optional[float] = None) -> np.array:
         """
         Common sorting function for all ``top`` methods. Sorts by highest value first.
 
-        Operates in ``number``, ``percent_each`` or ``percent_all`` limit mode and ``abs`` or ``sum`` total mode.
+        Operates in ``number``, ``percent`` or ``cum_percent`` limit mode.
         In ``number`` mode, return ``limit`` values.
         In ``percent`` mode, return all values >= (total * limit); where ``0 < limit <= 1`` (e.g. any value over 5% of total).
         In ``cum_percent`` mode, return all values such that sum(values) >= (total * limit); where ``0 < limit <= 1`` (e.g. include all -sorted- values counting up (and first step over) limit).
@@ -44,8 +44,6 @@ class ContributionAnalysis:
             total = np.abs(data).sum()
         else:
             abs_total_flag = False
-
-        # total = total or np.abs(data).sum()
 
         if total == 0 and limit_type == "cum_percent":
             raise ValueError("Cumulative percentage cannot be calculated to a total of 0, use a different limit type or total")
